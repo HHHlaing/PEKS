@@ -17,7 +17,7 @@
 #include <openssl/sha.h>
 
 #include "peks.h"
-
+#include "base64.hpp"
 
 //#define DEBUG 1
 /*#ifdef __cplusplus
@@ -95,12 +95,16 @@ int main(int argc, char **argv)
                 printf("Equal\n");
         else
                 printf("Not equal\n");
-
-        unsigned char data [1024];
+        int len = element_length_in_bytes(key.pub.g);
+        unsigned char data [len];
         element_to_bytes(data, key.pub.g);
-        std::string *gSerialize;
         std::cout  << "g  " <<key.pub.g << std::endl;
         std::cout  << "Data " << data << std::endl;
+        std::string encoded = base64_encode(data, len);
+        std::string decoded = base64_decode(encoded);
+        //std::string s( reinterpret_cast<char const*>(data), len ) ;
+        std::cout  << "String " << encoded << std::endl;
+        std::cout  << "Decode " << decoded << std::endl;
         //strcpy(gSerialize, data);
         //printf();
 	return 0;
