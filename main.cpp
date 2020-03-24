@@ -15,6 +15,7 @@
 #include <pbc.h>
 #include <assert.h>
 #include <openssl/sha.h>
+#include <vector>
 
 #include "peks.h"
 #include "base64.hpp"
@@ -52,7 +53,7 @@ int main(int argc, char **argv)
 
 	/* PBC data types */
 	pbc_param_t param;
-	pairing_t pairing;
+ 	pairing_t pairing;
 
 	/* Initialize pairing */
 	init_pbc_param_pairing(param, pairing);
@@ -60,9 +61,9 @@ int main(int argc, char **argv)
 	/* Get the order of G1 */
 	P = mpz_get_d(pairing->r);
 
-#if defined(DEBUG)
+//#if defined(DEBUG)
 	printf("P %lf\n", P);
-#endif
+//#endif
 	//int nlogP = log2(P);
 
 	/* KeyGen */
@@ -86,6 +87,60 @@ int main(int argc, char **argv)
 	int match;
 	match =	Test(W2, (int)strlen(W2), &key.pub, Tw, pairing);
 
+	//free(hashedW); hashedW = NULL;
+	//free(peks.B); peks.B = NULL;
+	//pbc_param_clear(param);
+
+        //int match = PEKSOperation(W1, W2);
+        if(match)
+                printf("Equal\n");
+        else
+                printf("Not equal\n");
+        int len = element_length_in_bytes(key.pub.g);
+        unsigned char g_data [len];
+        element_to_bytes(g_data, key.pub.g);
+        element_printf("Original g %B\n", key.pub.g);
+        std::cout  << "Data " << g_data << std::endl;
+        //std::string gstr(reinterpret_cast<char*>(g_data));
+        std::string g_encoded = base64_encode(g_data, len);
+        std::string g_decoded = base64_decode(g_encoded);
+        unsigned char* g_array = (unsigned char*)g_decoded.c_str();
+        //std::string s( reinterpret_cast<char const*>(data), len ) ;
+        std::cout  << "String " << g_encoded << len << std::endl;
+        std::cout  << "Decode " << g_array << std::endl;
+
+        len = element_length_in_bytes(key.pub.h);
+        unsigned char h_data [len];
+        element_to_bytes(h_data, key.pub.h);
+        element_printf("Original h %B\n", key.pub.h);
+        std::cout  << "Data " << h_data << std::endl;
+        std::string h_encoded = base64_encode(h_data, len);
+        std::string h_decoded = base64_decode(h_encoded);
+        unsigned char* hstr = (unsigned char*)h_decoded.c_str();
+        //std::string s( reinterpret_cast<char const*>(data), len ) ;
+        std::cout  << "String " << h_encoded << len << std::endl;
+        std::cout  << "Decode " << hstr << std::endl;
+        //strcpy(gSerialize, data);
+        element_t new_g;
+        element_t new_h;
+        //key1 *key1;
+        element_init_G1(new_g, pairing);
+        element_init_G1(new_h, pairing);
+        std::cout << "started to converted back" << std::endl;
+        int i = element_from_bytes(new_g, g_array);
+        std::cout << "g finished to converted back " << i << std::endl;
+        int j = element_from_bytes(new_h, hstr);
+        std::cout << "finished to converted back " << j << std::endl;
+
+        element_printf("new g %B\n", new_g);
+        element_printf("new h %B\n", new_h);
+
+        element_set(key.pub.g, new_g);
+        element_set(key.pub.h, new_h);
+
+
+	match =	Test(W2, (int)strlen(W2), &key.pub, Tw, pairing);
+
 	free(hashedW); hashedW = NULL;
 	//free(peks.B); peks.B = NULL;
 	pbc_param_clear(param);
@@ -95,17 +150,6 @@ int main(int argc, char **argv)
                 printf("Equal\n");
         else
                 printf("Not equal\n");
-        int len = element_length_in_bytes(key.pub.g);
-        unsigned char data [len];
-        element_to_bytes(data, key.pub.g);
-        std::cout  << "g  " <<key.pub.g << std::endl;
-        std::cout  << "Data " << data << std::endl;
-        std::string encoded = base64_encode(data, len);
-        std::string decoded = base64_decode(encoded);
-        //std::string s( reinterpret_cast<char const*>(data), len ) ;
-        std::cout  << "String " << encoded << std::endl;
-        std::cout  << "Decode " << decoded << std::endl;
-        //strcpy(gSerialize, data);
-        //printf();
+
 	return 0;
 }

@@ -26,6 +26,10 @@ typedef struct key_s {
 	element_t priv;
 	key_pub pub;
 }key;
+typedef struct key_s1 {
+	element_t priv;
+	key_pub pub;
+}key1;
 
 /* PEKS = [A, B] i.e. A=g^r and B=H2(t) */
 typedef struct peks_s {
