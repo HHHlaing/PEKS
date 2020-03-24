@@ -96,9 +96,11 @@ int main(int argc, char **argv)
         else
                 printf("Not equal\n");
 
-        unsigned char *data [1024];
-        element_to_bytes(data, *key.pub.g);
+        unsigned char data [1024];
+        element_to_bytes(data, key.pub.g);
         std::string *gSerialize;
+        std::cout  << "g  " <<key.pub.g << std::endl;
+        std::cout  << "Data " << data << std::endl;
         //strcpy(gSerialize, data);
         //printf();
 	return 0;
