@@ -4,7 +4,6 @@
  *  Created on: Jul 7, 2015
  *      Author: Atul Mahind
  */
-
 #include "peks.h"
 
 void sha512(const char *word, int word_size, 
@@ -66,6 +65,7 @@ void init_pbc_param_pairing(pbc_param_t param, pairing_t pairing)
 #endif
 }
 
+
 void KeyGen(key *key, pbc_param_t param, pairing_t pairing)
 {
 	/* Private key - α */
@@ -77,6 +77,7 @@ void KeyGen(key *key, pbc_param_t param, pairing_t pairing)
 	element_random(key->pub.g);
 	element_init_G1(key->pub.h, pairing);
 	element_pow_zn(key->pub.h, key->pub.g, key->priv);
+
 }
 
 void PEKS(peks *peks, key_pub *pub, pairing_t pairing,
@@ -100,8 +101,8 @@ void PEKS(peks *peks, key_pub *pub, pairing_t pairing,
 	element_pow_zn(peks->A, pub->g, r);
 
 	/* H2(t) */
-	char *char_t = malloc(sizeof(char)*element_length_in_bytes(t));
-	char *buffer = malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+	char *char_t = (char*)malloc(sizeof(char)*element_length_in_bytes(t));
+	char *buffer = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
 	element_snprint(char_t, element_length_in_bytes(t), t);
 	sha512(char_t, element_length_in_bytes(t), buffer);
 	get_n_bits(buffer, H2_t, bitswanted);
@@ -137,7 +138,7 @@ int Test(char *W2, int lenW2, key_pub *pub, element_t Tw, pairing_t pairing)
 	printf("log2(P) %d\n", nlogP);
 #endif
 	/* H1(W2S) */
-	char *hashedW2 = malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+	char *hashedW2 = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
 	sha512(W2, lenW2, hashedW2);
 	element_init_G1(H1_W2, pairing);
 	element_from_hash(H1_W2, hashedW2, strlen(hashedW2));
@@ -146,7 +147,7 @@ int Test(char *W2, int lenW2, key_pub *pub, element_t Tw, pairing_t pairing)
 #endif
 
 	/* PEKS(key_pub, W2) */
-	peks.B = malloc(sizeof(char)*(nlogP));
+	peks.B = (char*)malloc(sizeof(char)*(nlogP));
 	PEKS(&peks, pub, pairing, H1_W2, nlogP);
 #if defined(DEBUG)
 	element_printf("A %B\n", peks.A);
@@ -155,11 +156,11 @@ int Test(char *W2, int lenW2, key_pub *pub, element_t Tw, pairing_t pairing)
 	pairing_apply(temp, Tw, peks.A, pairing);
 
 	/* H2(temp) */
-	char *char_temp = malloc(sizeof(char)*element_length_in_bytes(temp));
-	char *hashed_temp = malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+	char *char_temp = (char*)malloc(sizeof(char)*element_length_in_bytes(temp));
+	char *hashed_temp = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
 	element_snprint(char_temp, element_length_in_bytes(temp), temp);
 	sha512(char_temp, element_length_in_bytes(temp), hashed_temp);
-	char *H2_lhs = malloc(sizeof(char)*(nlogP));
+	char *H2_lhs = (char*)malloc(sizeof(char)*(nlogP));
 	get_n_bits(hashed_temp, H2_lhs, nlogP);
 
 	/* Check for equality */
@@ -224,7 +225,7 @@ int peks_scheme(char* W1, char *W2)
 #endif
 
 	/* H1(W) */
-	char *hashedW = malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+	char *hashedW = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
 	sha512(W1, (int)strlen(W1), hashedW);
 	element_init_G1(H1_W1, pairing);
 	element_from_hash(H1_W1, hashedW, (int)strlen(hashedW));
@@ -244,3 +245,24 @@ int peks_scheme(char* W1, char *W2)
 
 	return match;
 }
+
+
+element_t* getPubg(key key)
+{
+  return &key.pub.g;
+
+}
+
+element_t* getPubh(key key)
+{
+  return &key.pub.h;
+
+}
+
+element_t* getPriKey(key key)
+{
+  return &key.priv;
+
+}
+
+

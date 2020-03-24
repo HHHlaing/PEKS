@@ -1,5 +1,5 @@
-CC=gcc
-SOURCE=main.c peks.c
+CC=g++
+SOURCE=main.cpp peks.c
 DEPS=peks.h
 EXECUTABLE=peks
 CFLAG=-I ~/.local/include/pbc

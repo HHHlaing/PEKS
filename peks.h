@@ -56,3 +56,9 @@ int Test(char *W2S, int lenW2S, key_pub *pub, element_t Tw, pairing_t pairing);
 
 int peks_scheme(char* W1, char *W2);
 
+element_t* getPubg(key key);
+
+element_t* getPubh(key key);
+
+element_t* getPriKey(key key);
+
