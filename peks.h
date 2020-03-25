@@ -37,7 +37,7 @@ typedef struct peks_s {
 	char* B;
 }peks;
 
-void sha512(const char *word, int word_size, 
+void sha512(const char *word, int word_size,
 		char hashed_word[SHA512_DIGEST_LENGTH*2+1]);
 
 void get_n_bits(char* src, char* out, int bitswanted);
@@ -66,3 +66,6 @@ element_t* getPubh(key key);
 
 element_t* getPriKey(key key);
 
+int TestwithNewParam(char *W2, int lenW2, key_pub *pub, element_t Tw);
+
+bool is_empty(std::ifstream& pFile);

@@ -4,6 +4,9 @@
  *  Created on: Jul 7, 2015
  *      Author: Atul Mahind
  */
+#include <fstream>
+#include <iostream>
+
 #include "peks.h"
 
 void sha512(const char *word, int word_size, 
@@ -125,18 +128,18 @@ int Test(char *W2, int lenW2, key_pub *pub, element_t Tw, pairing_t pairing)
 
 	/* PEKS = [A, B] i.e. A=g^r and B=H2(t) */
 	peks peks;
-	
+
 	element_t H1_W2;
 	element_t temp;
 
 	double P = mpz_get_d(pairing->r);
-#if defined(DEBUG)
+//#if defined(DEBUG)
 	printf("P %lf\n", P);
-#endif	
+//#endif
 	int nlogP = log2(P);
-#if defined(DEBUG)
+//#if defined(DEBUG)
 	printf("log2(P) %d\n", nlogP);
-#endif
+//#endif
 	/* H1(W2S) */
 	char *hashedW2 = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
 	sha512(W2, lenW2, hashedW2);
@@ -164,7 +167,7 @@ int Test(char *W2, int lenW2, key_pub *pub, element_t Tw, pairing_t pairing)
 	get_n_bits(hashed_temp, H2_lhs, nlogP);
 
 	/* Check for equality */
-#if defined(DEBUG)
+//#if defined(DEBUG)
 	int i;
 	printf("lhs ");
 	for(i = 0; i < nlogP; i++)
@@ -172,12 +175,12 @@ int Test(char *W2, int lenW2, key_pub *pub, element_t Tw, pairing_t pairing)
 	printf("\nrhs ");
 	for(i = 0; i < nlogP; i++)
 		printf("%c", peks.B[i]);
-	printf("\n"); 
-#endif
+	printf("\n");
+//#endif
 	int match;
 	if(!memcmp(H2_lhs, peks.B, nlogP))
 		match = 1;
-	else 
+	else
 		match = 0;
 
 	/* Free the memory */
@@ -266,3 +269,99 @@ element_t* getPriKey(key key)
 }
 
 
+int TestwithNewParam(char *W2, int lenW2, key_pub *pub, element_t Tw)
+{
+        /* PEKS for W2S */
+
+        /* PEKS = [A, B] i.e. A=g^r and B=H2(t) */
+        peks peks;
+
+        element_t H1_W2;
+        element_t temp;
+
+        //read param from file
+        pbc_param_t param;
+        std::ifstream in("pairing");
+        if (is_empty(in))
+        {
+          std::cout << "Error!" << std::endl;
+          exit(1);
+        }
+        std::string line, text;
+        while(std::getline(in, line))
+        {
+          text += line + "\n";
+        }
+        const char* param_str = text.c_str();
+        pbc_param_t param1;
+        pbc_param_init_set_str(param1, param_str);
+
+        pairing_t pairing;
+        init_pbc_param_pairing(param, pairing);
+
+        double P = mpz_get_d(pairing->r);
+//#if defined(DEBUG)
+        printf("P %lf\n", P);
+//#endif
+        int nlogP = log2(P);
+//#if defined(DEBUG)
+        printf("log2(P) %d\n", nlogP);
+//#endif
+        /* H1(W2S) */
+        char *hashedW2 = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+        sha512(W2, lenW2, hashedW2);
+        element_init_G1(H1_W2, pairing);
+        element_from_hash(H1_W2, hashedW2, strlen(hashedW2));
+#if defined(DEBUG)
+        element_printf("H1_W2 %B\n", H1_W2);
+#endif
+
+        /* PEKS(key_pub, W2) */
+        peks.B = (char*)malloc(sizeof(char)*(nlogP));
+        PEKS(&peks, pub, pairing, H1_W2, nlogP);
+#if defined(DEBUG)
+        element_printf("A %B\n", peks.A);
+#endif
+        element_init_GT(temp, pairing);
+        pairing_apply(temp, Tw, peks.A, pairing);
+
+        /* H2(temp) */
+        char *char_temp = (char*)malloc(sizeof(char)*element_length_in_bytes(temp));
+        char *hashed_temp = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+        element_snprint(char_temp, element_length_in_bytes(temp), temp);
+        sha512(char_temp, element_length_in_bytes(temp), hashed_temp);
+        char *H2_lhs = (char*)malloc(sizeof(char)*(nlogP));
+        get_n_bits(hashed_temp, H2_lhs, nlogP);
+
+        /* Check for equality */
+//#if defined(DEBUG)
+        int i;
+        printf("lhs ");
+        for(i = 0; i < nlogP; i++)
+                printf("%c", H2_lhs[i]);
+        printf("\nrhs ");
+        for(i = 0; i < nlogP; i++)
+                printf("%c", peks.B[i]);
+        printf("\n");
+//#endif
+        int match;
+        if(!memcmp(H2_lhs, peks.B, nlogP))
+ match = 1;
+        else
+                match = 0;
+
+        /* Free the memory */
+        free(H2_lhs); H2_lhs = NULL;
+        free(peks.B); peks.B = NULL;
+        free(char_temp); char_temp = NULL;
+        free(hashed_temp); hashed_temp = NULL;
+        free(hashedW2); hashedW2 = NULL;
+
+        return match;
+}
+
+
+bool is_empty(std::ifstream& pFile)
+{
+    return pFile.peek() == std::ifstream::traits_type::eof();
+}
