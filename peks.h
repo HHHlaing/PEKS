@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <gmp.h>
-#include <pbc.h>
+#include <pbc/pbc.h>
 #include <assert.h>
 #include <openssl/sha.h>
 

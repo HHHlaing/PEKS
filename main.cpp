@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <gmp.h>
-#include <pbc.h>
+#include <pbc/pbc.h>
 #include <assert.h>
 #include <openssl/sha.h>
 #include <fstream>
@@ -121,9 +121,9 @@ int main(int argc, char **argv)
 
         match =  TestwithNewParam(W2, (int)strlen(W2), &key.pub, Tw);
         if(match)
-                printf("Equal\n");
+                printf("Equal for TestwithNewParam\n");
         else
-                printf("Not equal\n");
+                printf("Not equal for TestwithNewParam\n");
 
         int len = element_length_in_bytes(key.pub.g);
         unsigned char g_data [len];
@@ -176,9 +176,9 @@ int main(int argc, char **argv)
 
         //int match = PEKSOperation(W1, W2);
         if(match)
-                printf("Equal\n");
+                printf("Equal after key encode and decode\n");
         else
-                printf("Not equal\n");
+                printf("Not equal after key encode and decode\n");
 
 	return 0;
 }

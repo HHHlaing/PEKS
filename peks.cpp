@@ -283,7 +283,6 @@ int TestwithNewParam(char *W2, int lenW2, key_pub *pub, element_t Tw)
         element_t temp;
 
         //read param from file
-        pbc_param_t param;
         std::ifstream in("pairing");
         if (is_empty(in))
         {
@@ -295,14 +294,15 @@ int TestwithNewParam(char *W2, int lenW2, key_pub *pub, element_t Tw)
         {
           text += line + "\n";
         }
+        std::cout << "Param\n" << text << std::endl;
         const char* param_str = text.c_str();
         pbc_param_t param1;
         pbc_param_init_set_str(param1, param_str);
 
-        pairing_t pairing;
-        init_pbc_param_pairing(param, pairing);
-
-        double P = mpz_get_d(pairing->r);
+        pairing_t pairing1;
+        //init_pbc_param_pairing(param1, pairing1);
+        pairing_init_set_str(pairing1, param_str);
+        double P = mpz_get_d(pairing1->r);
 //#if defined(DEBUG)
         printf("P %lf\n", P);
 //#endif
@@ -313,7 +313,7 @@ int TestwithNewParam(char *W2, int lenW2, key_pub *pub, element_t Tw)
         /* H1(W2S) */
         char *hashedW2 = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
         sha512(W2, lenW2, hashedW2);
-        element_init_G1(H1_W2, pairing);
+        element_init_G1(H1_W2, pairing1);
         element_from_hash(H1_W2, hashedW2, strlen(hashedW2));
 #if defined(DEBUG)
         element_printf("H1_W2 %B\n", H1_W2);
@@ -321,18 +321,20 @@ int TestwithNewParam(char *W2, int lenW2, key_pub *pub, element_t Tw)
 
         /* PEKS(key_pub, W2) */
         peks.B = (char*)malloc(sizeof(char)*(nlogP));
-        PEKS(&peks, pub, pairing, H1_W2, nlogP);
+        PEKS(&peks, pub, pairing1, H1_W2, nlogP);
+
 #if defined(DEBUG)
         element_printf("A %B\n", peks.A);
 #endif
-        element_init_GT(temp, pairing);
-        pairing_apply(temp, Tw, peks.A, pairing);
+        element_t temp1;
+        element_init_GT(temp1, pairing1);
+        pairing_apply(temp1, Tw, peks.A, pairing1);
 
         /* H2(temp) */
-        char *char_temp = (char*)malloc(sizeof(char)*element_length_in_bytes(temp));
+        char *char_temp = (char*)malloc(sizeof(char)*element_length_in_bytes(temp1));
         char *hashed_temp = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
-        element_snprint(char_temp, element_length_in_bytes(temp), temp);
-        sha512(char_temp, element_length_in_bytes(temp), hashed_temp);
+        element_snprint(char_temp, element_length_in_bytes(temp1), temp1);
+        sha512(char_temp, element_length_in_bytes(temp1), hashed_temp);
         char *H2_lhs = (char*)malloc(sizeof(char)*(nlogP));
         get_n_bits(hashed_temp, H2_lhs, nlogP);
 
@@ -349,7 +351,7 @@ int TestwithNewParam(char *W2, int lenW2, key_pub *pub, element_t Tw)
 //#endif
         int match;
         if(!memcmp(H2_lhs, peks.B, nlogP))
- match = 1;
+                match = 1;
         else
                 match = 0;
 
