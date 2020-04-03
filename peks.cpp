@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include "peks.h"
-
+#include "base64.hpp"
 void sha512(const char *word, int word_size, 
 		char hashed_word[SHA512_DIGEST_LENGTH*2+1]) 
 {
@@ -112,9 +112,22 @@ void PEKS(peks *peks, key_pub *pub, pairing_t pairing,
 	element_snprint(char_t, element_length_in_bytes(t), t);
 	sha512(char_t, element_length_in_bytes(t), buffer);
 	get_n_bits(buffer, H2_t, bitswanted);
-
-	free(char_t); char_t = NULL;
+        free(char_t); char_t = NULL;
 	free(buffer); buffer = NULL;
+
+        int len = element_length_in_bytes(pub->g);
+        unsigned char g_data [len];
+        element_to_bytes(g_data, pub->g);
+        std::string g_encoded = base64_encode(g_data, len);
+        
+
+        char* B_1 = getB(peks);
+        std::string B_1_str(B_1);
+        std::string B_1_str_Hex = GetHexFromBin(B_1_str);
+        std::cout << std::endl << "*********************************************\n" << "g is " << g_encoded << std::endl;
+        std::cout << std::endl << "*********************************************\n" << "h is " << B_1_str_Hex << std::endl;
+        std::cout << std::endl << "*********************************************\n" << std::endl;
+	
 }
 
 void Trapdoor(element_t Tw, pairing_t pairing, element_t alpha,
@@ -252,6 +265,11 @@ int peks_scheme(char* W1, char *W2)
 	return match;
 }
 
+
+char* getB(peks *peks)
+{
+    return peks->B;
+}
 
 element_t* getPubg(key key)
 {
