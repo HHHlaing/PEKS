@@ -119,15 +119,14 @@ void PEKS(peks *peks, key_pub *pub, pairing_t pairing,
         unsigned char g_data [len];
         element_to_bytes(g_data, pub->g);
         std::string g_encoded = base64_encode(g_data, len);
-        
+
 
         char* B_1 = getB(peks);
         std::string B_1_str(B_1);
         std::string B_1_str_Hex = GetHexFromBin(B_1_str);
-        std::cout << std::endl << "*********************************************\n" << "g is " << g_encoded << std::endl;
-        std::cout << std::endl << "*********************************************\n" << "h is " << B_1_str_Hex << std::endl;
+        std::cout << std::endl << "*********************************************\n" << "g is " << g_encoded << g_encoded.size() << std::endl;
+        std::cout << std::endl << "*********************************************\n" << "h is " << B_1_str_Hex << B_1_str_Hex.size() << std::endl;
         std::cout << std::endl << "*********************************************\n" << std::endl;
-	
 }
 
 void Trapdoor(element_t Tw, pairing_t pairing, element_t alpha,
@@ -201,7 +200,7 @@ int Test(char *W2, int lenW2, key_pub *pub, element_t Tw, pairing_t pairing)
 
 	/* Free the memory */
 	free(H2_lhs); H2_lhs = NULL;
-	free(peks.B); peks.B = NULL;
+	//free(peks.B); peks.B = NULL;
 	free(char_temp); char_temp = NULL;
 	free(hashed_temp); hashed_temp = NULL;
 	free(hashedW2); hashedW2 = NULL;

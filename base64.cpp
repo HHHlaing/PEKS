@@ -121,6 +121,7 @@ std::string base64_decode(std::string const& encoded_string) {
   return ret;
 }
 
+
 std::string GetHexFromBin(std::string sBinary)
 {
 	std::string rest,tmp,chr = "0000";

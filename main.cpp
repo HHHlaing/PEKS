@@ -1,184 +1,209 @@
-/*
- * main.cpp
- *
- *  Created on: Jul 7, 2015
- *      Author: mahind
- */
-
-#include <iostream>
 #include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <gmp.h>
-#include <pbc/pbc.h>
-#include <assert.h>
-#include <openssl/sha.h>
-#include <fstream>
+#include <iostream>
+#include <string>
+#include <cstring>
 
-#include "peks.h"
 #include "base64.hpp"
+#include "new_peks.hpp"
+using namespace std;
 
-//#define DEBUG 1
-/*#ifdef __cplusplus
-extern "C" {
-        int PEKSOperation(char *W1, char *W2) {
-} //function PEKSOperation
-} //extern C
-#endif*/
-
-int main(int argc, char **argv)
+int main()
 {
-	if (argc != 3) {
-		printf("Usage: %s <word1> <word2>\n",argv[0]);
-        return 1;
-    }
+   peksOpt p_opt;
+   pairing_t pairing;
+   pbc_param_t param;
+   int len;
 
-	char *W1, *W2;
-	W1 = *(++argv);
-	W2 = *(++argv);
+   element_t H1_W2;
+   p_opt.init_pbc_param_pairing(param, pairing);
+   double P = mpz_get_d(pairing->r);
+   int nlogP = log2(P);
+   p_opt.KeyGen(param, pairing);
 
-        /* Order of group G1 and G2 */
-	double P;
+   char A[] = "hi";
+   std::string str_test = "hi";
+   char *W2 = &A[0];
+   const char *W1 = str_test.c_str();
+   int lenW2 = (int)strlen(W2);
 
-	/* Apriv = α and Apub = [g, h=g^α] */
-	key key;
+   std::cout << "\n before peks generation " << std::endl;
 
-	/* Trapdoor */
-	element_t Tw;
-
-	/* H1(W) */
-	element_t H1_W1;
-
-	/* PBC data types */
-	pbc_param_t param;
-        FILE *fptr;
-        fptr = fopen("pairing", "w");
-        if (fptr == NULL)
-        {
-          std::cout << "Error!" << std::endl;
-          exit(1);
-        }
- 	pairing_t pairing;
-
-	/* Initialize pairing */
-	init_pbc_param_pairing(param, pairing);
-        pbc_param_out_str(fptr, param);
-        fclose(fptr);
-        std::ifstream in("pairing");
-        if (fptr == NULL)
-        {
-          std::cout << "Error!" << std::endl;
-          exit(1);
-        }
-        std::string line, text;
-        while(std::getline(in, line))
-        {
-          text += line + "\n";
-        }
-        const char* param_str = text.c_str();
-        pbc_param_t param1;
-        pbc_param_init_set_str(param1, param_str);
-	/* Get the order of G1 */
-	P = mpz_get_d(pairing->r);
-
-//#if defined(DEBUG)
-	printf("P %lf\n", P);
-//#endif
-	//int nlogP = log2(P);
-
-	/* KeyGen */
-	KeyGen(&key, param, pairing);
-
-#if defined(DEBUG)
-	element_printf("α %e\n", key.priv);
-#endif
-	/* H1(W) */
-	char *hashedW = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
-	sha512(W1, (int)strlen(W1), hashedW);
-	element_init_G1(H1_W1, pairing);
-	element_from_hash(H1_W1, hashedW, (int)strlen(hashedW));
-#if defined(DEBUG)
-	element_printf("H1_W1 %B\n", H1_W1);
-#endif
-
-	/* Trapdoor */
-	Trapdoor(Tw, pairing, key.priv, H1_W1);
-
-	int match;
-	match =	Test(W2, (int)strlen(W2), &key.pub, Tw, pairing);
-
-	//free(hashedW); hashedW = NULL;
-	//free(peks.B); peks.B = NULL;
-	//pbc_param_clear(param);
-
-        //int match = PEKSOperation(W1, W2);
-        if(match)
-                printf("Equal\n");
-        else
-                printf("Not equal\n");
-
-        match =  TestwithNewParam(W2, (int)strlen(W2), &key.pub, Tw);
-        if(match)
-                printf("Equal for TestwithNewParam\n");
-        else
-                printf("Not equal for TestwithNewParam\n");
-
-        int len = element_length_in_bytes(key.pub.g);
-        unsigned char g_data [len];
-        element_to_bytes(g_data, key.pub.g);
-        //element_printf("Original g %B\n", key.pub.g);
-        //std::cout  << "Data " << g_data << std::endl;
-        //std::string gstr(reinterpret_cast<char*>(g_data));
-        std::string g_encoded = base64_encode(g_data, len);
-        std::string g_decoded = base64_decode(g_encoded);
-        unsigned char* g_array = (unsigned char*)g_decoded.c_str();
-        //std::string s( reinterpret_cast<char const*>(data), len ) ;
-        //std::cout  << "String " << g_encoded << len << std::endl;
-        //std::cout  << "Decode " << g_array << std::endl;
-
-        len = element_length_in_bytes(key.pub.h);
-        unsigned char h_data [len];
-        element_to_bytes(h_data, key.pub.h);
-        //element_printf("Original h %B\n", key.pub.h);
-        //std::cout  << "Data " << h_data << std::endl;
-        std::string h_encoded = base64_encode(h_data, len);
-        std::string h_decoded = base64_decode(h_encoded);
-        unsigned char* hstr = (unsigned char*)h_decoded.c_str();
-        //std::string s( reinterpret_cast<char const*>(data), len ) ;
-        //std::cout  << "String " << h_encoded << len << std::endl;
-        //std::cout  << "Decode " << hstr << std::endl;
-        //strcpy(gSerialize, data);
-        element_t new_g;
-        element_t new_h;
-        //key1 *key1;
-        element_init_G1(new_g, pairing);
-        element_init_G1(new_h, pairing);
-        //std::cout << "started to converted back" << std::endl;
-        int i = element_from_bytes(new_g, g_array);
-        //std::cout << "g finished to converted back " << i << std::endl;
-        int j = element_from_bytes(new_h, hstr);
-        //std::cout << "finished to converted back " << j << std::endl;
-
-        //element_printf("new g %B\n", new_g);
-        //element_printf("new h %B\n", new_h);
-
-        element_set(key.pub.g, new_g);
-        element_set(key.pub.h, new_h);
+   //std::pair<element_t, char*> peks;
+   char *hashedW2 = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+   std::cout << "\n after hashedW2 " << std::endl;
+   p_opt.sha512(W2, lenW2, hashedW2);
+   std::cout << "\n after  p_opt.sha512(W2, lenW2, hashedW2); " << std::endl;
+   element_init_G1(H1_W2, pairing);
+   std::cout << "\n after element_init_G1(H1_W2, pairing); " << std::endl;
+   element_from_hash(H1_W2, hashedW2, strlen(hashedW2));
+   //element_printf("H1_W2 %B\n", H1_W2);
 
 
-	match =	Test(W2, (int)strlen(W2), &key.pub, Tw, pairing);
+   //char* tmp = malloc(sizeof(char)*(nlogP));
+   /* PEKS(key_pub, W2) */
+   p_opt.set_B((char*)malloc(sizeof(char)*(nlogP)));
+   p_opt.PEKS(p_opt.getPubg(), p_opt.getPubh(), &pairing, &H1_W2, nlogP);
 
-	free(hashedW); hashedW = NULL;
-	//free(peks.B); peks.B = NULL;
-	pbc_param_clear(param);
+   std::cout << "\n finished peks generation " << std::endl;
 
-        //int match = PEKSOperation(W1, W2);
-        if(match)
-                printf("Equal after key encode and decode\n");
-        else
-                printf("Not equal after key encode and decode\n");
+   //free(hashedW2); hashedW2 = NULL;
 
-	return 0;
+   //get peks and B from object
+   element_t* peks;
+
+   char* B;
+   peks = p_opt.getPEKS();
+   B = p_opt.getB();
+   //p_opt.key_printf();
+
+   std::cout << "the original B value is >>>> " << std::endl << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+   for(int i = 0; i < nlogP; i++)
+      printf("%c", B[i]);
+   printf("\n");
+   std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+
+
+   element_t* tw;
+   element_t H1_W1;
+   /* H1(W) */
+   char *hashedW = (char*)malloc(sizeof(char)*SHA512_DIGEST_LENGTH*2+1);
+   p_opt.sha512(W1, (int)strlen(W1), hashedW);
+   element_init_G1(H1_W1, pairing);
+   element_from_hash(H1_W1, hashedW, (int)strlen(hashedW));
+   p_opt.Trapdoor(&pairing, p_opt.getPriKey(), &H1_W1);
+   tw = p_opt.getTw();
+
+   //free(hashedW); hashedW = NULL;
+   //pbc_param_clear(param);
+
+
+   int match = p_opt.Test(p_opt.getPubg(), p_opt.getPubh(), peks, B, tw, pairing);
+   if(match)
+     printf("Equal\n");
+   else
+     printf("Not equal\n");
+
+   //encode pub g
+   len = element_length_in_bytes_compressed(*p_opt.getPubg());
+   unsigned char *g_data = (unsigned char*)malloc(len);
+   element_to_bytes_compressed(g_data, *p_opt.getPubg());
+   //element_snprint(&g_data, len, *p_opt.getPubg());
+   std::cout << std::endl << "finished element_to_bytes g_data" << std::endl;
+   string g_string = base64_encode(g_data, len);
+   std::cout << std::endl << "finished base64 encode g" << std::endl;
+
+   //encode pub h
+   len = element_length_in_bytes_compressed(*p_opt.getPubh());
+   unsigned char *h_data = (unsigned char*)malloc(len);
+   element_to_bytes_compressed(h_data, *p_opt.getPubh());
+   //element_snprint(&h_data, len, *p_opt.getPubh());
+   std::cout << std::endl << "finished element_snprint" << std::endl;
+   string h_key_string = base64_encode(h_data, len);
+   std::cout << std::endl << "finished base64 encode h" << std::endl;
+
+
+
+   std::cout << std::endl << "g_encoded is >>> " << g_string << std::endl;
+   std::cout << std::endl << "h_encoded is >>> " << h_key_string << std::endl;
+
+
+   //decode g and h
+   string g_decode_string = base64_decode(g_string);
+   string h_decode_string = base64_decode(h_key_string);
+  // std::string h_decoded = base64_decode(h_encoded);
+
+
+   unsigned char* g_array = (unsigned char*)malloc(1024);
+   g_array = (unsigned char*)g_decode_string.c_str();
+   unsigned char* h_array = (unsigned char*)malloc(1024);
+   h_array = (unsigned char*)h_decode_string.c_str();
+
+   element_t new_g;
+   element_t new_h;
+
+   element_init_G1(new_g, pairing);
+   element_init_G1(new_h, pairing);
+
+   element_from_bytes_compressed(new_g, g_array);
+   element_from_bytes_compressed(new_h, h_array);
+
+
+   element_printf("\ng %B\n", new_g);
+   element_printf("\nh %B\n", new_h);
+   p_opt.setPubKey(new_g, new_h);
+   //done setting transferred key
+
+   p_opt.key_printf();
+   match = p_opt.Test(&new_g, &new_h, peks, B, tw, pairing);
+   if(match)
+     printf("Equal after transferring keys\n");
+   else
+     printf("Not equal after transferring keys\n");
+
+
+   //start to encode the peks
+   len = element_length_in_bytes_compressed(*peks);
+   unsigned char *peks_data = (unsigned char*)malloc(len);
+   element_to_bytes_compressed(peks_data, *p_opt.getPEKS());
+   //element_snprint(&h_data, len, *p_opt.getPubh());
+   string peks_string = base64_encode(peks_data, len);
+
+   string peks_decode_string = base64_decode(peks_string);
+  // std::string h_decoded = base64_decode(h_encoded);
+
+
+   unsigned char* peks_array = (unsigned char*)malloc(1024);
+   peks_array = (unsigned char*)peks_decode_string.c_str();
+
+   //start to encode Hr (change to string)
+   std::string h_string(B);
+   //std::string hr_string = GetHexFromBin(h_string);
+   //output of encoded values
+   //std::cout << "peks_encoded is " << peks_encoded << std::endl;
+   //std::cout << "hr_string_encoded is " << h_string << std::endl;
+
+
+
+   //start to decode peks
+   //std::string new_peks_decoded = base64_decode(peks_encoded);
+   //unsigned char* new_peks_array = (unsigned char*)new_peks_decoded.c_str();
+
+   //creation of new peks
+   element_t new_peks;
+   element_init_G1(new_peks, pairing);
+   element_from_bytes_compressed(new_peks, peks_array);
+   p_opt.set_peks(new_peks);
+
+   //creation of new hr (change string to char*)
+   //std::string hr_string_Bin_arr = GetBinFromHex(hr_string);
+   char *new_B = (char*)h_string.c_str();
+   std::cout << std::endl << "new B is " << std::endl;
+   std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+   for(int i = 0; i < nlogP; i++)
+      printf("%c", new_B[i]);
+   printf("\n");
+   std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+   p_opt.set_B(new_B);
+
+   peks = p_opt.getPEKS();
+   B = p_opt.getB();
+
+
+   int count = 0;
+
+   for(int j = 0; j <1; j++)
+   {
+      match = p_opt.Test(p_opt.getPubg(), p_opt.getPubh(), peks, B, tw, pairing);
+
+      if(match)
+      {
+        count++;
+      }
+   }
+
+   std::cout << "equal count is >>> " << count << std::endl;
+
+
+   return 0;
+
 }
